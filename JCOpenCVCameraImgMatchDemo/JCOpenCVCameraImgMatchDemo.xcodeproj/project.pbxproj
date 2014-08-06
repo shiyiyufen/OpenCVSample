@@ -402,7 +402,7 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					/Users/jimple/work/git/OpenCVSample/OpenCV/2.4.9,
+					"\"$(SRCROOT)/OpenCV/2.4.9\"",
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "JCOpenCVCameraImgMatchDemo/JCOpenCVCameraImgMatchDemo-Prefix.pch";
@@ -421,7 +421,7 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					/Users/jimple/work/git/OpenCVSample/OpenCV/2.4.9,
+					"\"$(SRCROOT)/OpenCV/2.4.9\"",
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "JCOpenCVCameraImgMatchDemo/JCOpenCVCameraImgMatchDemo-Prefix.pch";

@@ -137,139 +137,142 @@
 
 - (void)compareImgHist
 {
-    UIImage *img2 = [[CameraImageHelper image] copy];
-    
-    CGFloat objectWidth = img2.size.width;
-    CGFloat objectHeight = img2.size.height;
-    CGFloat scaledHeight = floorf(objectHeight / (objectWidth / 320.0f));
-    CGSize newSize = CGSizeMake(320.0f, scaledHeight);
-    UIGraphicsBeginImageContext(newSize);
-    // Tell the old image to draw in this new context, with the desired
-    // new size
-    [img2 drawInRect:CGRectMake(0,0,newSize.width,newSize.height)];
-    // Get the new image from the context
-    UIImage* newImage = UIGraphicsGetImageFromCurrentImageContext();
-    // End the context
-    UIGraphicsEndImageContext();
-    
-    IplImage * image2= [Utility CreateIplImageFromUIImage:newImage];
-    
-    CvHistogram *hist2 = [Utility getHSVHist:image2];
-    
-    // 归一化直方图
-    cvNormalizeHist(hist2, 1);
-    
-    // 颜色匹配
-    // 相关：CV_COMP_CORREL
-    // 卡方：CV_COMP_CHISQR
-    // 直方图相交：CV_COMP_INTERSECT
-    // Bhattacharyya距离：CV_COMP_BHATTACHARYYA
-    double  com1 = cvCompareHist(_histSrc,hist2, CV_COMP_CORREL);
-    double  com2 = cvCompareHist(_histSrc,hist2, CV_COMP_INTERSECT);
-    double  com3 = cvCompareHist(_histSrc,hist2, CV_COMP_CHISQR);
-    double  com4 = cvCompareHist(_histSrc,hist2, CV_COMP_BHATTACHARYYA);
-    
-    BOOL bIsPassHard = NO;
-    BOOL bIsPassNormal = NO;
-    BOOL bIsPassEasy = NO;
-    CGFloat fCorrelThreshold = F_CORREL_THRESH_HARD;
-    CGFloat fIntersectThreshold = F_CORREL_INTERSECT_HARD;
-    CGFloat fChisQRThreshold = F_CORREL_CHISQR_HARD;
-    CGFloat fBhattacharyyaThreshold = F_CORREL_BHATTACHARYYA_HARD;
-
-    fCorrelThreshold = F_CORREL_THRESH_HARD;
-    fIntersectThreshold = F_CORREL_INTERSECT_HARD;
-    fChisQRThreshold = F_CORREL_CHISQR_HARD;
-    fBhattacharyyaThreshold = F_CORREL_BHATTACHARYYA_HARD;
-    bIsPassHard = ((com1 > fCorrelThreshold) && (com2 > fIntersectThreshold) && (com3 < fChisQRThreshold) && (com4 < fBhattacharyyaThreshold));
-    
-    [self.m_labelRetHard setText:[NSString stringWithFormat:@"%@", bIsPassHard?@"YES":@"NO"]];
-    [self.m_labelRetHard setTextColor:(bIsPassHard?[UIColor greenColor]:[UIColor redColor])];
-
-    fCorrelThreshold = F_CORREL_THRESH_NORMAL;
-    fIntersectThreshold = F_CORREL_INTERSECT_NORMAL;
-    fChisQRThreshold = F_CORREL_CHISQR_NORMAL;
-    fBhattacharyyaThreshold = F_CORREL_BHATTACHARYYA_NORMAL;
-    bIsPassNormal = ((com1 > fCorrelThreshold) && (com2 > fIntersectThreshold) && (com3 < fChisQRThreshold) && (com4 < fBhattacharyyaThreshold));
-    
-    [self.m_labelRetNormal setText:[NSString stringWithFormat:@"%@", bIsPassNormal?@"YES":@"NO"]];
-    [self.m_labelRetNormal setTextColor:(bIsPassNormal?[UIColor greenColor]:[UIColor redColor])];
-
-    fCorrelThreshold = F_CORREL_THRESH_EASY;
-    fIntersectThreshold = F_CORREL_INTERSECT_EASY;
-    fChisQRThreshold = F_CORREL_CHISQR_EASY;
-    fBhattacharyyaThreshold = F_CORREL_BHATTACHARYYA_EASY;
-    bIsPassEasy = ((com1 > fCorrelThreshold) && (com2 > fIntersectThreshold) && (com3 < fChisQRThreshold) && (com4 < fBhattacharyyaThreshold));
-    
-    [self.m_labelRetEasy setText:[NSString stringWithFormat:@"%@", bIsPassEasy?@"YES":@"NO"]];
-    [self.m_labelRetEasy setTextColor:(bIsPassEasy?[UIColor greenColor]:[UIColor redColor])];
-
-    BOOL bIsPass = NO;//((com1 > fCorrelThreshold) && (com2 > fIntersectThreshold) && (com3 < fChisQRThreshold) && (com4 < fBhattacharyyaThreshold));
-    NSString *strData = [NSString stringWithFormat:@"CORREL[     %f ]\nINTERSECT[    %f ]\nCHISQR[     %f ]\nBHATTACHARYYA[   %f ]\n", com1, com2, com3, com4];
-    
-    
-//////////////////////////////////////////////////////////////////////////////////////////////
-    
-    // 边缘匹配 
-    IplImage * mode= _iplImgSrc;
-    IplImage * test= image2;
-    
-    IplImage* bw_mode = cvCreateImage(cvGetSize(mode),mode->depth,1);
-    IplImage* bw_test = cvCreateImage(cvGetSize(test),mode->depth,1);
-    IplImage* canny_mode = cvCreateImage(cvGetSize(mode),mode->depth,1);
-    IplImage* canny_test = cvCreateImage(cvGetSize(test),mode->depth,1);
-    
-    cvCvtColor(mode,bw_mode,CV_RGB2GRAY);
-    cvCvtColor(test,bw_test,CV_RGB2GRAY);
-    
-    //model contours
-    cvCanny(bw_mode,canny_mode,50,60,3);
-    
-    //test contours
-    cvCanny(bw_test,canny_test,50,60,3);
-    
-    double matching = cvMatchShapes( canny_test, canny_mode, CV_CONTOURS_MATCH_I3,0);
-    
-    if (bIsPassHard && (matching < 0.02/*0.055*/))
-    {
-        bIsPass = YES;
+    @autoreleasepool {
+        UIImage *img2 = [[CameraImageHelper image] copy];
+        
+        CGFloat objectWidth = img2.size.width;
+        CGFloat objectHeight = img2.size.height;
+        CGFloat scaledHeight = floorf(objectHeight / (objectWidth / 320.0f));
+        CGSize newSize = CGSizeMake(320.0f, scaledHeight);
+        UIGraphicsBeginImageContext(newSize);
+        // Tell the old image to draw in this new context, with the desired
+        // new size
+        [img2 drawInRect:CGRectMake(0,0,newSize.width,newSize.height)];
+        // Get the new image from the context
+        UIImage* newImage = UIGraphicsGetImageFromCurrentImageContext();
+        // End the context
+        UIGraphicsEndImageContext();
+        
+        IplImage * image2= [Utility CreateIplImageFromUIImage:newImage];
+        
+        CvHistogram *hist2 = [Utility getHSVHist:image2];
+        
+        // 归一化直方图
+        cvNormalizeHist(hist2, 1);
+        
+        // 颜色匹配
+        // 相关：CV_COMP_CORREL
+        // 卡方：CV_COMP_CHISQR
+        // 直方图相交：CV_COMP_INTERSECT
+        // Bhattacharyya距离：CV_COMP_BHATTACHARYYA
+        double  com1 = cvCompareHist(_histSrc,hist2, CV_COMP_CORREL);
+        double  com2 = cvCompareHist(_histSrc,hist2, CV_COMP_INTERSECT);
+        double  com3 = cvCompareHist(_histSrc,hist2, CV_COMP_CHISQR);
+        double  com4 = cvCompareHist(_histSrc,hist2, CV_COMP_BHATTACHARYYA);
+        
+        BOOL bIsPassHard = NO;
+        BOOL bIsPassNormal = NO;
+        BOOL bIsPassEasy = NO;
+        CGFloat fCorrelThreshold = F_CORREL_THRESH_HARD;
+        CGFloat fIntersectThreshold = F_CORREL_INTERSECT_HARD;
+        CGFloat fChisQRThreshold = F_CORREL_CHISQR_HARD;
+        CGFloat fBhattacharyyaThreshold = F_CORREL_BHATTACHARYYA_HARD;
+        
+        fCorrelThreshold = F_CORREL_THRESH_HARD;
+        fIntersectThreshold = F_CORREL_INTERSECT_HARD;
+        fChisQRThreshold = F_CORREL_CHISQR_HARD;
+        fBhattacharyyaThreshold = F_CORREL_BHATTACHARYYA_HARD;
+        bIsPassHard = ((com1 > fCorrelThreshold) && (com2 > fIntersectThreshold) && (com3 < fChisQRThreshold) && (com4 < fBhattacharyyaThreshold));
+        
+        [self.m_labelRetHard setText:[NSString stringWithFormat:@"%@", bIsPassHard?@"YES":@"NO"]];
+        [self.m_labelRetHard setTextColor:(bIsPassHard?[UIColor greenColor]:[UIColor redColor])];
+        
+        fCorrelThreshold = F_CORREL_THRESH_NORMAL;
+        fIntersectThreshold = F_CORREL_INTERSECT_NORMAL;
+        fChisQRThreshold = F_CORREL_CHISQR_NORMAL;
+        fBhattacharyyaThreshold = F_CORREL_BHATTACHARYYA_NORMAL;
+        bIsPassNormal = ((com1 > fCorrelThreshold) && (com2 > fIntersectThreshold) && (com3 < fChisQRThreshold) && (com4 < fBhattacharyyaThreshold));
+        
+        [self.m_labelRetNormal setText:[NSString stringWithFormat:@"%@", bIsPassNormal?@"YES":@"NO"]];
+        [self.m_labelRetNormal setTextColor:(bIsPassNormal?[UIColor greenColor]:[UIColor redColor])];
+        
+        fCorrelThreshold = F_CORREL_THRESH_EASY;
+        fIntersectThreshold = F_CORREL_INTERSECT_EASY;
+        fChisQRThreshold = F_CORREL_CHISQR_EASY;
+        fBhattacharyyaThreshold = F_CORREL_BHATTACHARYYA_EASY;
+        bIsPassEasy = ((com1 > fCorrelThreshold) && (com2 > fIntersectThreshold) && (com3 < fChisQRThreshold) && (com4 < fBhattacharyyaThreshold));
+        
+        [self.m_labelRetEasy setText:[NSString stringWithFormat:@"%@", bIsPassEasy?@"YES":@"NO"]];
+        [self.m_labelRetEasy setTextColor:(bIsPassEasy?[UIColor greenColor]:[UIColor redColor])];
+        
+        BOOL bIsPass = NO;//((com1 > fCorrelThreshold) && (com2 > fIntersectThreshold) && (com3 < fChisQRThreshold) && (com4 < fBhattacharyyaThreshold));
+        NSString *strData = [NSString stringWithFormat:@"CORREL[     %f ]\nINTERSECT[    %f ]\nCHISQR[     %f ]\nBHATTACHARYYA[   %f ]\n", com1, com2, com3, com4];
+        
+        
+        //////////////////////////////////////////////////////////////////////////////////////////////
+        
+        // 边缘匹配
+        IplImage * mode= _iplImgSrc;
+        IplImage * test= image2;
+        
+        IplImage* bw_mode = cvCreateImage(cvGetSize(mode),mode->depth,1);
+        IplImage* bw_test = cvCreateImage(cvGetSize(test),mode->depth,1);
+        IplImage* canny_mode = cvCreateImage(cvGetSize(mode),mode->depth,1);
+        IplImage* canny_test = cvCreateImage(cvGetSize(test),mode->depth,1);
+        
+        cvCvtColor(mode,bw_mode,CV_RGB2GRAY);
+        cvCvtColor(test,bw_test,CV_RGB2GRAY);
+        
+        //model contours
+        cvCanny(bw_mode,canny_mode,50,60,3);
+        
+        //test contours
+        cvCanny(bw_test,canny_test,50,60,3);
+        
+        double matching = cvMatchShapes( canny_test, canny_mode, CV_CONTOURS_MATCH_I3,0);
+        
+        if (bIsPassHard && (matching < 0.02/*0.055*/))
+        {
+            bIsPass = YES;
+        }
+        else if (bIsPassNormal && (matching < 0.02/*0.030*/))
+        {
+            bIsPass = YES;
+        }
+        else if (bIsPassEasy && (matching < 0.01/*0.015*/))
+        {
+            bIsPass = YES;
+        }
+        else if (matching < 0.006/*0.008*/)
+        {
+            bIsPass = YES;
+        }
+        else
+        {
+            bIsPass = NO;
+        }
+        
+        strData = [strData stringByAppendingFormat:@"canny compare [%f]", matching];
+        [self.m_labelRetCanny setText:[NSString stringWithFormat:@"%@", bIsPass?@"YES":@"NO"]];
+        
+        cvReleaseImage(&bw_mode);
+        cvReleaseImage(&bw_test);
+        cvReleaseImage(&canny_mode);
+        cvReleaseImage(&canny_test);
+        
+        [self.m_labelRetCanny setTextColor:(bIsPass?[UIColor greenColor]:[UIColor redColor])];
+        
+        [self.m_labelData setText:strData];
+        [self.m_labelRet setText:[NSString stringWithFormat:@"%@", bIsPass?@"YES":@"NO"]];
+        [self.m_labelRet setTextColor:(bIsPass?[UIColor greenColor]:[UIColor redColor])];
+        
+        cvReleaseHist(&hist2);
+        //cvReleaseImage(&image);
+        cvReleaseImage(&image2);
+        
+        img2 = nil;
     }
-    else if (bIsPassNormal && (matching < 0.02/*0.030*/))
-    {
-        bIsPass = YES;
-    }
-    else if (bIsPassEasy && (matching < 0.01/*0.015*/))
-    {
-        bIsPass = YES;
-    }
-    else if (matching < 0.006/*0.008*/)
-    {
-        bIsPass = YES;
-    }
-    else
-    {
-        bIsPass = NO;
-    }
     
-    strData = [strData stringByAppendingFormat:@"canny compare [%f]", matching];
-    [self.m_labelRetCanny setText:[NSString stringWithFormat:@"%@", bIsPass?@"YES":@"NO"]];
-    
-    cvReleaseImage(&bw_mode);
-    cvReleaseImage(&bw_test);
-    cvReleaseImage(&canny_mode);
-    cvReleaseImage(&canny_test);
-
-    [self.m_labelRetCanny setTextColor:(bIsPass?[UIColor greenColor]:[UIColor redColor])];
-    
-    [self.m_labelData setText:strData];
-    [self.m_labelRet setText:[NSString stringWithFormat:@"%@", bIsPass?@"YES":@"NO"]];
-    [self.m_labelRet setTextColor:(bIsPass?[UIColor greenColor]:[UIColor redColor])];
-    
-    cvReleaseHist(&hist2);
-    //cvReleaseImage(&image);
-    cvReleaseImage(&image2);
-    
-    img2 = nil;
 }
 
 #pragma mark - picker delegate
